@@ -353,12 +353,20 @@ Contributions are welcome! Please:
 
 ## License
 
-[Add your license here]
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
 
 ## Support
 
 For issues or questions:
-- GitHub Issues: [link to issues]
-- Documentation: [link to docs]
+- **GitHub Issues**: [https://github.com/carlossg/kubernetes-agent/issues](https://github.com/carlossg/kubernetes-agent/issues)
+- **Documentation**: See the `docs/` directory and inline README files
+
+## Development Documentation
+
+Additional development documentation is available in the `docs/development/` directory:
+- Maven plugin integration and logging
+- Debug mode configuration
+- Testing strategies
+- Rate limiting and fork modes
 
 

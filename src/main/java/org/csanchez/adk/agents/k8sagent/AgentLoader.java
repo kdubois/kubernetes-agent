@@ -1,25 +1,28 @@
-// package org.csanchez.adk.agents.k8sagent;
+package org.csanchez.adk.agents.k8sagent;
 
-// import java.util.NoSuchElementException;
+import java.util.NoSuchElementException;
 
-// import com.google.adk.agents.BaseAgent;
-// import com.google.common.collect.ImmutableList;
+import javax.annotation.Nonnull;
 
-// public class AgentLoader implements com.google.adk.web.AgentLoader {
+import com.google.adk.agents.BaseAgent;
+import com.google.common.collect.ImmutableList;
 
-//     public static final AgentLoader INSTANCE = new AgentLoader();
+public class AgentLoader implements com.google.adk.web.AgentLoader {
 
-//     @Override
-//     public ImmutableList<String> listAgents() {
-//         return ImmutableList.of("kubernetes");
-//     }
+    public static final AgentLoader INSTANCE = new AgentLoader();
 
-//     @Override
-//     public BaseAgent loadAgent(String name) {
-//         switch (name) {
-//             case "kubernetes": return KubernetesAgent.initAgent();
-//             default: throw new NoSuchElementException("Agent not found: " + name);
-//         }
-//     }
+    @Override
+    @Nonnull
+    public ImmutableList<String> listAgents() {
+        return ImmutableList.of("kubernetes");
+    }
 
-// }
+    @Override
+    public BaseAgent loadAgent(String name) {
+        switch (name) {
+            case "kubernetes": return KubernetesAgent.initAgent();
+            default: throw new NoSuchElementException("Agent not found: " + name);
+        }
+    }
+
+}

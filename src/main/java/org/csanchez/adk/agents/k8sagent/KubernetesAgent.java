@@ -59,11 +59,11 @@ public class KubernetesAgent {
 			.blockingGet();
 		
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-			System.out.println("\nExiting Kubernetes Agent. Goodbye!");
+			logger.info("Exiting Kubernetes Agent. Goodbye!");
 		}));
 		
 		try (Scanner scanner = new Scanner(System.in, StandardCharsets.UTF_8)) {
-			System.out.println("Kubernetes AI Agent started. Type 'quit' to exit.");
+			logger.info("Kubernetes AI Agent started in console mode. Type 'quit' to exit.");
 			while (true) {
 				System.out.print("\nYou > ");
 				String userInput = scanner.nextLine();
