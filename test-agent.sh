@@ -3,7 +3,7 @@
 # Supports both Kubernetes and local modes
 # Usage:
 #   ./test-agent.sh k8s     # Test agent running in Kubernetes (default)
-#   ./test-agent.sh local   # Test agent running locally on localhost:8080
+#   ./test-agent.sh local   # Test agent running locally on localhost:8888
 
 set -e
 
@@ -13,7 +13,7 @@ if [[ "$MODE" != "k8s" && "$MODE" != "local" ]]; then
 	echo "❌ Invalid mode: $MODE"
 	echo "Usage: $0 [k8s|local]"
 	echo "  k8s   - Test agent running in Kubernetes (default)"
-	echo "  local - Test agent running locally on localhost:8080"
+	echo "  local - Test agent running locally on localhost:8888"
 	exit 1
 fi
 
@@ -22,7 +22,7 @@ AGENT_NAMESPACE="argo-rollouts"
 TEST_NAMESPACE="${NAMESPACE:-default}"
 TEST_POD_NAME="${POD_NAME:-test-pod}"
 CONTEXT="${CONTEXT:-kind-rollouts-plugin-metric-ai-test-e2e}"
-LOCAL_URL="${LOCAL_URL:-http://localhost:8080}"
+LOCAL_URL="${LOCAL_URL:-http://localhost:8888}"
 
 function _kubectl() {
 	kubectl --context "$CONTEXT" -n "$AGENT_NAMESPACE" "$@"
@@ -40,7 +40,7 @@ function _get_base_url() {
 	if [[ "$MODE" == "local" ]]; then
 		echo "$LOCAL_URL"
 	else
-		echo "http://localhost:8080"
+		echo "http://localhost:8888"
 	fi
 }
 
@@ -57,9 +57,9 @@ echo ""
 # Test 1: Health Check
 echo "1️⃣  Testing health endpoint..."
 BASE_URL=$(_get_base_url)
-health_url="$BASE_URL/a2a/health"
+health_url="$BASE_URL/q/health"
 if ! HEALTH_RESPONSE=$(_curl -sf "$health_url"); then
-	echo "❌ Health check failed. Agent may not be ready."
+	echo "❌ Health check failed ($health_url). Agent may not be ready."
 	if [[ "$MODE" == "k8s" ]]; then
 		echo "   Check agent logs: kubectl logs --context $CONTEXT -n $AGENT_NAMESPACE deployment/kubernetes-agent"
 	else
@@ -111,7 +111,7 @@ else
 	if ! ANALYSIS_RESPONSE=$(_kubectl exec deployment/kubernetes-agent -- sh -c "curl -sSf -X POST \
 		-H 'Content-Type: application/json' \
 		-d '$REQUEST_PAYLOAD' \
-		http://localhost:8080/a2a/analyze"); then
+		http://localhost:8888/a2a/analyze"); then
 		echo "❌ Request failed. Agent may be unresponsive or rate limited."
 		echo "   Check agent logs: kubectl logs --context $CONTEXT -n $AGENT_NAMESPACE deployment/kubernetes-agent"
 		exit 1
