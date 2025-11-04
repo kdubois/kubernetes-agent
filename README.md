@@ -55,37 +55,33 @@ Kubernetes Agent (ADK)
 - Java 17+
 - Maven 3.8+
 - Kubernetes cluster
-- Google API Key (Gemini)
+- Google API Key (Gemini) or OpenAI API Key
 - GitHub Personal Access Token
 
 ## Local Development
 
-### 1. Build the project
+### 1. Set environment variables
 
 ```bash
-cd kubernetes-agent
-mvn clean package
-```
-
-### 2. Set environment variables
-
-```bash
+# to use Gemini:
 export GOOGLE_API_KEY="your-google-api-key"
+# to use OpenAI:
+export OPENAI_API_KEY="your openai key"
 export GITHUB_TOKEN="your-github-token"
 ```
 
-### 3. Run locally (console mode)
+### 2. Run locally
 
 ```bash
-java -jar target/kubernetes-agent-1.0.0.jar console
-```
-
-### 4. Run as server
-
-```bash
-java -jar target/kubernetes-agent-1.0.0.jar
+mvn quarkus:dev [-Dquarkus.profile=dev,[openai][gemini]]
 # Server starts on port 8080
 # Health check: http://localhost:8080/a2a/health
+```
+
+### 4. Run locally in console mode
+
+```bash
+mvn quarkus:dev [-Dquarkus.profile=dev,[openai][gemini]] -Drun.mode=console
 ```
 
 ## Deployment to Kubernetes
@@ -101,6 +97,8 @@ Or directly with Quarkus:
 
 ```bash
 quarkus image push --also-build
+or
+mvn quarkus:image-push -Dquarkus.container-image.build=true -DquarkusRegistryClient=true
 ```
 
 
@@ -126,6 +124,8 @@ or directly with quarkus:
 
 ```bash
 quarkus deploy
+or
+mvn quarkus:deploy
 ```
 
 ### 4. Verify deployment
