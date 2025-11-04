@@ -5,6 +5,7 @@ An autonomous AI agent for Kubernetes debugging and remediation, powered by Goog
 ## Overview
 
 The Kubernetes Agent is an intelligent system that:
+
 - **Debugs** Kubernetes pods automatically
 - **Analyzes** logs, events, and metrics
 - **Identifies** root causes of issues
@@ -14,6 +15,7 @@ The Kubernetes Agent is an intelligent system that:
 ## Features
 
 ### Kubernetes Debugging Tools
+
 - **Pod Debugging**: Analyze pod status, conditions, and container states
 - **Events**: Retrieve and correlate cluster events
 - **Logs**: Fetch and analyze container logs (including previous crashes)
@@ -21,14 +23,16 @@ The Kubernetes Agent is an intelligent system that:
 - **Resources**: Inspect related deployments, services, and configmaps
 
 ### Remediation Capabilities
+
 - **Git Operations**: Clone, branch, commit, push (using JGit library)
 - **GitHub PRs**: Automatically create pull requests with:
-	- Root cause analysis
-	- Code fixes
-	- Testing recommendations
-	- Links to Kubernetes resources
+    - Root cause analysis
+    - Code fixes
+    - Testing recommendations
+    - Links to Kubernetes resources
 
 ### A2A Communication
+
 - **REST API**: Expose analysis capabilities via HTTP
 - **Integration**: Works with `rollouts-plugin-metric-ai` for canary analysis
 
@@ -93,6 +97,13 @@ docker build -t csanchez/kubernetes-agent:latest .
 docker push csanchez/kubernetes-agent:latest
 ```
 
+Or directly with Quarkus:
+
+```bash
+quarkus image push --also-build
+```
+
+
 ### 2. Create secrets
 
 ```bash
@@ -109,6 +120,12 @@ kubectl apply -f deployment/secret.yaml
 ```bash
 # Update image in deployment/deployment.yaml if needed
 kubectl apply -k deployment/
+```
+
+or directly with quarkus:
+
+```bash
+quarkus deploy
 ```
 
 ### 4. Verify deployment
