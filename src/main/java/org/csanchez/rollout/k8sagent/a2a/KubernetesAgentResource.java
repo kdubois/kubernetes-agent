@@ -86,12 +86,19 @@ public class KubernetesAgentResource {
                 }
             });
         }
-        
-        prompt.append("\nPlease analyze the canary deployment and provide:\n");
-        prompt.append("1. Root cause of any issues\n");
-        prompt.append("2. Whether to promote the canary (true/false)\n");
-        prompt.append("3. Confidence level (0-100)\n");
-        prompt.append("4. Remediation steps if needed\n");
+
+        prompt.append("\nYou have access to Kubernetes tools. Use them to gather information:\n");
+        prompt.append("1. Use get_pod_logs to fetch pod logs for analysis\n");
+        prompt.append("2. Use get_kubernetes_events to see recent events\n");
+        prompt.append("3. Use debug_kubernetes_pod to check pod status\n");
+        prompt.append("4. Compare stable vs canary pod behavior\n");
+        prompt.append("\nProvide a structured response with:\n");
+        prompt.append("- analysis: Detailed analysis text\n");
+        prompt.append("- rootCause: Identified root cause\n");
+        prompt.append("- remediation: Suggested remediation steps\n");
+        prompt.append("- prLink: GitHub PR link if applicable (can be null)\n");
+        prompt.append("- promote: true to promote canary, false to abort\n");
+        prompt.append("- confidence: Confidence level 0-100\n");
         
         return prompt.toString();
     }
