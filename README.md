@@ -89,6 +89,7 @@ mvn quarkus:dev [-Dquarkus.profile=dev,[openai][gemini]] -Drun.mode=console
 ### 1. Build Docker image
 
 ```bash
+mvn package -Dquarkus.profile=prod,[openai][gemini]
 docker build -t csanchez/kubernetes-agent:latest .
 docker push csanchez/kubernetes-agent:latest
 ```
