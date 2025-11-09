@@ -358,7 +358,7 @@ public class K8sTools {
                 result.put("deployments", deploymentInfo);
             }
             
-            if (resourceType == null || "pod".equalsIgnoreCase(resourceType)) {
+            if (resourceType == null || "pods".equalsIgnoreCase(resourceType)) {
                 List<Pod> pods;
                 
                 // Apply label selector if provided
@@ -374,8 +374,9 @@ public class K8sTools {
                         .list()
                         .getItems();
                 }
-                
+                Log.info(pods.toString());
                 if (resourceName != null && !resourceName.isEmpty()) {
+                    Log.info("Filtering Pods!");
                     pods = pods.stream()
                         .filter(p -> resourceName.equals(p.getMetadata().getName()))
                         .collect(Collectors.toList());
