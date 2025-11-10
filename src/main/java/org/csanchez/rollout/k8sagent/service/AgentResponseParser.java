@@ -31,9 +31,40 @@ public class AgentResponseParser {
         }
         
         // Try to extract promotion decision
-        boolean promote = !fullResponse.toLowerCase().contains("do not promote") &&
-            !fullResponse.toLowerCase().contains("abort") &&
-            !fullResponse.toLowerCase().contains("rollback");
+        // Look for explicit promote: true/false patterns first
+        boolean promote = true; // Default to true (safe default)
+        String lowerResponse = fullResponse.toLowerCase();
+        
+        // Check for explicit "promote: false" patterns (case-insensitive)
+        if (lowerResponse.contains("promote: false") ||
+            lowerResponse.contains("promote**: false") ||
+            lowerResponse.contains("promote**: `false`") ||
+            lowerResponse.contains("promote\": false") ||
+            lowerResponse.contains("promote: `false`") ||
+            lowerResponse.contains("**promote**: false") ||
+            lowerResponse.contains("- **promote**: false")) {
+            promote = false;
+        }
+        // Check for negative keywords that indicate not to promote
+        else if (lowerResponse.contains("do not promote") ||
+                 lowerResponse.contains("abort") ||
+                 lowerResponse.contains("rollback") ||
+                 lowerResponse.contains("should not promote") ||
+                 lowerResponse.contains("should not be promoted") ||
+                 lowerResponse.contains("should be halted") ||
+                 lowerResponse.contains("canary should not be promoted")) {
+            promote = false;
+        }
+        // Check for explicit "promote: true" patterns
+        else if (lowerResponse.contains("promote: true") ||
+                 lowerResponse.contains("promote**: true") ||
+                 lowerResponse.contains("promote**: `true`") ||
+                 lowerResponse.contains("promote\": true") ||
+                 lowerResponse.contains("promote: `true`") ||
+                 lowerResponse.contains("**promote**: true") ||
+                 lowerResponse.contains("- **promote**: true")) {
+            promote = true;
+        }
         
         // Set confidence (would be extracted from agent response in production)
         int confidence = promote ? 80 : 50;

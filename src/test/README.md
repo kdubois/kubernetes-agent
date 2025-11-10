@@ -2,22 +2,58 @@
 
 ## Overview
 
-This directory contains unit tests for the Kubernetes AI Agent, focusing on the A2A (Agent-to-Agent) communication layer.
+This directory contains comprehensive tests for the Kubernetes AI Agent, including unit tests, integration tests, and end-to-end tests.
 
 ## Test Files
+
+### ComprehensiveE2ETest.java (End-to-End Integration Test) ⭐ NEW
+
+**Complete end-to-end integration test** that simulates a real-world scenario:
+1. Creates a failing pod in Kubernetes with database connection errors
+2. Simulates Argo Rollouts plugin calling the agent
+3. Verifies agent analyzes logs and identifies root cause
+4. Tests GitHub PR creation with automated fixes
+5. Validates conversation memory across multiple requests
+
+**Requirements:**
+- `OPENAI_API_KEY` environment variable (required)
+- `GITHUB_TOKEN` environment variable (optional, for PR creation test)
+- `TEST_GITHUB_REPO` environment variable (optional, for PR creation test)
+- Access to a Kubernetes cluster (in-cluster or via kubeconfig)
+
+**Quick Start:**
+```bash
+# Set required environment variable
+export OPENAI_API_KEY="sk-..."
+
+# Run the test using the convenient script
+./run-e2e-test.sh
+
+# Or run directly with Maven
+mvn test -Dtest=ComprehensiveE2ETest
+```
+
+📖 **[Full E2E Test Documentation](java/org/csanchez/rollout/agents/README_E2E_TEST.md)**
+
+### KubernetesAgentResourceIT.java (Integration Tests)
+
+**Integration tests** that test the actual REST API endpoints with real AI analysis. These tests:
+- Call the `/a2a/analyze` endpoint with realistic failure scenarios
+- Verify the actual AI analysis responses
+- Test various pod failure types (CrashLoopBackOff, OOMKilled, ImagePullBackOff)
+- **Require `OPENAI_API_KEY` environment variable** to run
+- Are automatically skipped if the API key is not available
 
 ### A2AResponseTest.java (Unit Tests)
 
 **Fast unit tests** for the A2A request/response data structures. These tests run without external dependencies and validate the request/response objects.
 
-### A2AControllerIntegrationTest.java (Integration Tests)
+### Other Integration Tests
 
-**Integration tests** that actually call the controller's `analyze()` method with real pod failure scenarios. These tests:
-- Create a real `InMemoryRunner` with a test agent
-- Call `controller.analyze()` with realistic failure scenarios
-- Verify the actual AI analysis responses
-- **Require `GOOGLE_API_KEY` environment variable** to run
-- Are automatically skipped if the API key is not available
+Additional integration tests for specific components:
+- `A2AAgentExecutorTest.java` - Tests the A2A agent executor
+- `A2AMemoryIdIntegrationTest.java` - Tests conversation memory functionality
+- `KubernetesAgentResponseTest.java` - Tests response parsing and formatting
 
 #### Test Coverage
 
@@ -49,6 +85,23 @@ This directory contains unit tests for the Kubernetes AI Agent, focusing on the 
 
 ## Running Tests
 
+### Quick Start - Run E2E Test (Recommended)
+
+The comprehensive E2E test validates the entire workflow:
+
+```bash
+# Set required environment variable
+export OPENAI_API_KEY="sk-..."
+
+# Optional: Enable GitHub PR creation test
+export GITHUB_TOKEN="ghp_..."
+export TEST_GITHUB_REPO="https://github.com/your-org/your-test-repo"
+
+# Run using the convenient script
+cd kubernetes-agent
+./run-e2e-test.sh
+```
+
 ### Run All Tests
 ```bash
 mvn test
@@ -59,21 +112,19 @@ mvn test
 mvn test -Dtest=A2AResponseTest
 ```
 
-### Run Integration Tests (Requires GOOGLE_API_KEY)
+### Run Integration Tests (Requires OPENAI_API_KEY)
 ```bash
 # Set your API key
-export GOOGLE_API_KEY="your-key-here"
+export OPENAI_API_KEY="sk-..."
 
-# Run integration tests
-mvn test -Dtest=A2AControllerIntegrationTest
+# Run all integration tests
+mvn test -Dtest=KubernetesAgentResourceIT
 
-# Run a specific integration test
-mvn test -Dtest=A2AControllerIntegrationTest#testAnalyzePodFailure_CrashLoopBackOff
-```
+# Run comprehensive E2E test
+mvn test -Dtest=ComprehensiveE2ETest
 
-### Run Specific Test Method
-```bash
-mvn test -Dtest=A2AResponseTest#testCreatePodFailureRequest_CrashLoopBackOff
+# Run a specific test method
+mvn test -Dtest=ComprehensiveE2ETest#test3_verifyLogAnalysis
 ```
 
 ### Run with Coverage
@@ -83,10 +134,11 @@ mvn test jacoco:report
 
 ### What Gets Tested
 
-| Test Class | Tests What | Requires API Key | Speed |
-|------------|-----------|------------------|-------|
-| `A2AResponseTest` | Data structures & validation | ❌ No | ⚡ Fast |
-| `A2AControllerIntegrationTest` | Actual controller logic with AI | ✅ Yes | 🐌 Slow |
+| Test Class | Tests What | Requires API Key | Requires K8s | Speed |
+|------------|-----------|------------------|--------------|-------|
+| `A2AResponseTest` | Data structures & validation | ❌ No | ❌ No | ⚡ Fast |
+| `KubernetesAgentResourceIT` | REST API with AI analysis | ✅ Yes | ❌ No | 🐌 Slow |
+| `ComprehensiveE2ETest` | Full workflow with K8s & GitHub | ✅ Yes | ✅ Yes | 🐢 Very Slow |
 
 ## Test Scenarios Covered
 
@@ -106,10 +158,81 @@ Tests use realistic pod failure scenarios similar to what would be encountered i
 - Resource constraints and limits
 - Service connectivity issues
 
-## Future Improvements
+## Test Scenarios Covered by E2E Test
 
-- Integration tests with real InMemoryRunner
-- End-to-end tests with actual Gemini API calls
-- Performance tests for response parsing
-- Mock Kubernetes API responses
+The comprehensive E2E test covers:
+
+1. **Pod Creation & Failure Simulation**
+   - Creates a pod with intentional database connection errors
+   - Waits for pod to enter CrashLoopBackOff state
+   - Verifies pod restart count increases
+
+2. **Argo Rollouts Plugin Simulation**
+   - Sends analysis request with full rollout context
+   - Includes metrics, versions, and failure information
+   - Measures agent response time
+
+3. **Log Analysis Verification**
+   - Verifies agent identifies database/connection issues
+   - Checks confidence score is reasonable (>= 50%)
+   - Confirms agent recommends NOT promoting failing canary
+
+4. **GitHub PR Creation** (Optional)
+   - Tests automated fix generation
+   - Verifies PR is created with proper description
+   - Validates PR link is returned
+
+5. **Conversation Memory**
+   - Tests multiple sequential requests
+   - Verifies context is maintained across calls
+   - Validates memory isolation per session
+
+## Troubleshooting
+
+### Common Issues
+
+**"OPENAI_API_KEY not set"**
+```bash
+export OPENAI_API_KEY="sk-proj-..."
+```
+
+**"Cannot connect to Kubernetes cluster"**
+```bash
+# Check cluster connectivity
+kubectl cluster-info
+
+# Verify permissions
+kubectl auth can-i create namespaces
+```
+
+**"Test namespace not cleaned up"**
+```bash
+# Manual cleanup
+kubectl delete namespace k8s-agent-e2e-test
+```
+
+**"Agent takes too long to respond"**
+- Expected: 30-60 seconds for AI analysis
+- Check OpenAI API rate limits
+- Verify network connectivity
+
+### Getting Help
+
+- 📖 [E2E Test Documentation](java/org/csanchez/rollout/agents/README_E2E_TEST.md)
+- 📖 [Main Project README](../../README.md)
+- 📖 [Development Guide](../../docs/development/TESTING.md)
+
+## CI/CD Integration
+
+The E2E test can be integrated into CI/CD pipelines:
+
+```yaml
+# GitHub Actions example
+- name: Run E2E Test
+  env:
+    OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+  run: |
+    cd kubernetes-agent
+    ./run-e2e-test.sh
+```
 

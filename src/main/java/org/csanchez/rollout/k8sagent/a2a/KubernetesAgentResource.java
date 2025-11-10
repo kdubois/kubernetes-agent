@@ -14,6 +14,7 @@ import org.csanchez.rollout.k8sagent.agents.KubernetesAgent;
 import org.csanchez.rollout.k8sagent.model.KubernetesAgentRequest;
 import org.csanchez.rollout.k8sagent.model.KubernetesAgentResponse;
 import org.csanchez.rollout.k8sagent.service.AgentResponseParser;
+import org.csanchez.rollout.k8sagent.utils.RetryHelper;
 
 /**
  * REST API controller for Kubernetes Agent.
@@ -47,8 +48,11 @@ public class KubernetesAgentResource {
             String memoryId = request.getEffectiveMemoryId();
             Log.debug(MessageFormat.format("Using memory ID: {0}", memoryId));
             
-            // Execute analysis using the KubernetesAgent with memory support
-            String analysisResult = kubernetesAgent.chat(memoryId, prompt);
+            // Execute analysis with retry logic for transient errors
+            String analysisResult = RetryHelper.executeWithRetryOnTransientErrors(
+                () -> kubernetesAgent.chat(memoryId, prompt),
+                "AI agent analysis"
+            );
             
             // Parse response
             KubernetesAgentResponse response = responseParser.parse(analysisResult);
@@ -60,10 +64,16 @@ public class KubernetesAgentResource {
             Log.error(MessageFormat.format("Request details - Prompt: {0}", request.prompt()));
             Log.error(MessageFormat.format("Request details - Context: {0}", request.context()));
             
+            // Log additional details for debugging
+            if (e instanceof NullPointerException) {
+                Log.error("NullPointerException detected - this may be a Gemini API response issue");
+                Log.error(MessageFormat.format("Stack trace: {0}", getStackTraceAsString(e)));
+            }
+            
             KubernetesAgentResponse errorResponse = KubernetesAgentResponse.empty()
                 .withAnalysis(MessageFormat.format("Error: {0}", e.getMessage()))
-                .withRootCause("Analysis failed")
-                .withRemediation("Unable to provide remediation")
+                .withRootCause("Analysis failed: " + e.getClass().getSimpleName())
+                .withRemediation("Unable to provide remediation due to API error. Please try again.")
                 .withPromote(true) // Default to promote on error
                 .withConfidence(0);
             
@@ -71,6 +81,17 @@ public class KubernetesAgentResource {
                 .entity(errorResponse)
                 .build();
         }
+    }
+    
+    /**
+     * Convert exception stack trace to string for logging
+     */
+    private String getStackTraceAsString(Exception e) {
+        StringBuilder sb = new StringBuilder();
+        for (StackTraceElement element : e.getStackTrace()) {
+            sb.append("\n  at ").append(element.toString());
+        }
+        return sb.toString();
     }
     
     /**
