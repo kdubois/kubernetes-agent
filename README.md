@@ -239,7 +239,7 @@ spec:
 						podName: "{{args.canary-pod}}"
 						# Fallback to default mode
 						stablePodLabel: app=rollouts-demo,revision=stable
-						canaryPodLabel: app=rollouts-demo,revision=canary
+						canaryPodLabel: app=rollouts-demo,role=stable
 						model: gemini-2.0-flash-exp
 ```
 

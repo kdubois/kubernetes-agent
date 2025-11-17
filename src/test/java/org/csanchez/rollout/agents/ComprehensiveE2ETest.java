@@ -1,8 +1,6 @@
 package org.csanchez.rollout.agents;
 
 import io.fabric8.kubernetes.api.model.*;
-import io.fabric8.kubernetes.api.model.apps.Deployment;
-import io.fabric8.kubernetes.api.model.apps.DeploymentBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
@@ -264,7 +262,7 @@ class ComprehensiveE2ETest {
         // Add repository URL for PR creation (use a test repo or mock)
         String repoUrl = System.getenv("TEST_GITHUB_REPO");
         if (repoUrl == null || repoUrl.isEmpty()) {
-            repoUrl = "https://github.com/kdubois/test-repo";
+            repoUrl = "https://github.com/kdubois/rollouts-demo";
             System.out.println("⚠️  TEST_GITHUB_REPO not set, using default: " + repoUrl);
         }
         context.put("repoUrl", repoUrl);
@@ -396,7 +394,7 @@ class ComprehensiveE2ETest {
         String testRepo = System.getenv("TEST_GITHUB_REPO");
         
         if (testRepo == null || testRepo.isEmpty()) {
-            testRepo = "https://github.com/kdubois/test-repo";
+            testRepo = "https://github.com/kdubois/rollouts-demo";
             System.out.println("⚠️  TEST_GITHUB_REPO not set, using default: " + testRepo);
         }
         

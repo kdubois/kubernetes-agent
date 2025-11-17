@@ -21,7 +21,7 @@ Configure the following environment variables based on your chosen profile:
 
 #### For Gemini Profile
 ```bash
-GEMINI_API_KEY=your-gemini-api-key
+GOOGLE_API_KEY=your-gemini-api-key
 ```
 
 #### For OpenAI Profile
@@ -38,7 +38,7 @@ OPENAI_BASE_URL=https://api.openai.com/v1  # Optional, defaults to OpenAI API
 #### Using Gemini (Default)
 ```bash
 # Set environment variables in .env file
-GEMINI_API_KEY=your-gemini-api-key
+GOOGLE_API_KEY=your-gemini-api-key
 
 # Run the application (gemini is the default profile)
 ./mvnw quarkus:dev
@@ -66,7 +66,7 @@ cp deployment/secret.yaml.template deployment/secret.yaml
 ```yaml
 stringData:
   # For Gemini
-  gemini_api_key: "your-gemini-api-key"
+  GOOGLE_API_KEY: "your-gemini-api-key"
   
   # For OpenAI
   openai_api_key: "your-openai-api-key"

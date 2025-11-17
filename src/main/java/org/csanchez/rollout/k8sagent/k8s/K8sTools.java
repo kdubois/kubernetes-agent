@@ -243,66 +243,18 @@ public class K8sTools {
             }
             Log.info(MessageFormat.format("Retrieved {0} characters of logs", logs.length()));
             
-            // Analyze logs for common error patterns
-            Map<String, Object> analysis = analyzeLogs(logs);
-            
-            Map<String, Object> result = new HashMap<>();
-            result.put("namespace", namespace);
-            result.put("podName", podName);
-            result.put("container", containerName != null ? containerName : "default");
-            result.put("previous", getPrevious);
-            result.put("logs", logs);
-            result.put("analysis", analysis);
-            
-            return result;
+            return Map.of(
+                "namespace", namespace,
+                "podName", podName,
+                "container", containerName != null ? containerName : "default",
+                "previous", getPrevious,
+                "logs", logs
+            );
             
         } catch (Exception e) {
             Log.error("Error getting logs", e);
             return Map.of("error", e.getMessage());
         }
-    }
-    
-    /**
-     * Analyze logs for common error patterns
-     */
-    private Map<String, Object> analyzeLogs(String logs) {
-        if (logs == null || logs.isEmpty()) {
-            return Map.of("hasErrors", false);
-        }
-        
-        String lowerLogs = logs.toLowerCase();
-        boolean hasErrors = lowerLogs.contains("error") ||
-            lowerLogs.contains("exception") ||
-            lowerLogs.contains("fatal") ||
-            lowerLogs.contains("panic");
-        
-        boolean hasWarnings = lowerLogs.contains("warn");
-        
-        // Count error lines
-        long errorCount = logs.lines()
-            .filter(line -> {
-                String lower = line.toLowerCase();
-                return lower.contains("error") || lower.contains("exception");
-            })
-            .count();
-        
-        // Detect OOMKilled
-        boolean oomDetected = lowerLogs.contains("out of memory") ||
-            lowerLogs.contains("oomkilled");
-        
-        // Detect connection issues
-        boolean connectionIssues = lowerLogs.contains("connection refused") ||
-            lowerLogs.contains("connection timeout") ||
-            lowerLogs.contains("unable to connect");
-        
-        Map<String, Object> analysis = new HashMap<>();
-        analysis.put("hasErrors", hasErrors);
-        analysis.put("hasWarnings", hasWarnings);
-        analysis.put("errorCount", errorCount);
-        analysis.put("oomDetected", oomDetected);
-        analysis.put("connectionIssues", connectionIssues);
-        
-        return analysis;
     }
     
     /**
@@ -476,9 +428,8 @@ public class K8sTools {
                         .list()
                         .getItems();
                 }
-                Log.info(pods.toString());
+                
                 if (resourceName != null && !resourceName.isEmpty()) {
-                    Log.info("Filtering Pods!");
                     pods = pods.stream()
                         .filter(p -> resourceName.equals(p.getMetadata().getName()))
                         .collect(Collectors.toList());
@@ -580,19 +531,7 @@ public class K8sTools {
                 result.put("configMaps", configMapInfo);
             }
             
-            // Log detailed information about what was found
             Log.info("Successfully inspected resources");
-            
-
-            try {
-                ObjectMapper mapper = new ObjectMapper();
-                String jsonResult = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(result);
-                Log.info("Full result as JSON:\n" + jsonResult);
-            } catch (Exception jsonException) {
-                Log.error("Error serializing result to JSON", jsonException);
-                Log.info("Result object: " + result);
-            }
-            
             return result;
             
         } catch (Exception e) {

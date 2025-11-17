@@ -112,8 +112,11 @@ public class KubernetesAgentResource {
             });
         }
 
-        prompt.append("\nIMPORTANT: Gather data efficiently (max 5-7 tool calls), then provide analysis.\n");
-        prompt.append("Do NOT re-check the same resources multiple times.\n");
+        prompt.append("\nCRITICAL INSTRUCTIONS:\n");
+        prompt.append("1. Gather each piece of data ONCE (max 5-7 tool calls total)\n");
+        prompt.append("2. Do NOT call the same tool multiple times with the same parameters\n");
+        prompt.append("3. After gathering data, STOP and analyze what you have\n");
+        prompt.append("4. Make a decision based on the data collected\n");
         prompt.append("\nProvide a structured response with:\n");
         prompt.append("- analysis: Detailed analysis text\n");
         prompt.append("- rootCause: Identified root cause\n");

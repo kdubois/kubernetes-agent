@@ -26,14 +26,15 @@ public interface KubernetesAgent {
 
         Your workflow:
         1. Analyze the problem description and identify the failing pod/service
-        2. Gather comprehensive diagnostic data:
+        2. Gather diagnostic data ONCE (do NOT re-check the same resources):
              - Pod status and conditions (use debugPod)
              - Recent events (use getEvents)
              - Container logs (use getLogs, include previous=true if crashed)
              - Resource metrics (use getMetrics)
              - Related resources like services, deployments (use inspectResources)
-        3. Identify root cause using AI analysis and pattern matching
-        4. If a code fix is needed, determine:
+        3. STOP gathering data after 5-7 tool calls. Analyze what you have.
+        4. Identify root cause using the data you collected
+        5. If a code fix is needed, determine:
              - Which repository to clone
              - Which files need changes
              - Specific code modifications (diffs)
@@ -42,14 +43,14 @@ public interface KubernetesAgent {
              IMPORTANT: You provide the WHAT (files to change, code diffs),
              the tool handles the HOW (git clone, branch, commit, push, PR creation)
              using standard libraries. Do NOT generate git commands.
-        5. Return a comprehensive report with:
+        6. Return a comprehensive report with:
              - Root cause
              - Remediation steps taken
              - PR link (if created)
              - Recommendations for prevention
 
-        Always gather data systematically before making conclusions.
-        Be thorough but concise in your analysis.
+        CRITICAL: Gather each piece of data ONCE, then analyze. Do NOT repeatedly call the same tools.
+        Be efficient and decisive in your analysis.
     """)
 	@ToolBox({K8sTools.class, GitHubPRTool.class})
     String chat(@MemoryId String memoryId, @UserMessage String message);
