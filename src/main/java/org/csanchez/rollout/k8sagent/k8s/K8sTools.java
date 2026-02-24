@@ -1,6 +1,5 @@
 package org.csanchez.rollout.k8sagent.k8s;
 
-import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import io.fabric8.kubernetes.api.model.*;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
@@ -24,13 +23,12 @@ public class K8sTools {
     KubernetesClient k8sClient;
     
     /**
-     * Debug a Kubernetes pod
+     * Debug a Kubernetes pod to get detailed information about its status and conditions
+     * @param namespace The Kubernetes namespace where the pod is located (e.g., 'default', 'kube-system')
+     * @param podName The exact name of the pod to debug (e.g., 'my-app-7d8f9c5b6-xyz12')
      */
     @Tool("Debug a Kubernetes pod to get detailed information about its status and conditions")
-    public Map<String, Object> debugPod(
-            @P("The Kubernetes namespace where the pod is located (e.g., 'default', 'kube-system')") String namespace,
-            @P("The exact name of the pod to debug (e.g., 'my-app-7d8f9c5b6-xyz12')") String podName
-    ) {
+    public Map<String, Object> debugPod(String namespace, String podName) {
         Log.info("=== Executing Tool: debugPod ===");
         
         if (namespace == null || namespace.isEmpty() || podName == null || podName.isEmpty()) {
@@ -133,14 +131,13 @@ public class K8sTools {
     }
     
     /**
-     * Get Kubernetes events
+     * Get Kubernetes events for a namespace or specific pod
+     * @param namespace The Kubernetes namespace to get events from (e.g., 'default', 'kube-system')
+     * @param podName Optional: The exact name of a specific pod to filter events for
+     * @param limit Optional: Maximum number of events to return (default: 50)
      */
     @Tool("Get Kubernetes events for a namespace or specific pod")
-    public Map<String, Object> getEvents(
-            @P("The Kubernetes namespace to get events from (e.g., 'default', 'kube-system')") String namespace,
-            @P("Optional: The exact name of a specific pod to filter events for") String podName,
-            @P("Optional: Maximum number of events to return (default: 50)") Integer limit
-    ) {
+    public Map<String, Object> getEvents(String namespace, String podName, Integer limit) {
         Log.info("=== Executing Tool: getEvents ===");
         
         if (namespace == null || namespace.isEmpty()) {
@@ -205,14 +202,16 @@ public class K8sTools {
     /**
      * Get pod logs
      */
+    /**
+     * Get logs from a Kubernetes pod
+     * @param namespace The Kubernetes namespace where the pod is located (e.g., 'default', 'kube-system')
+     * @param podName The exact name of the pod to get logs from (e.g., 'my-app-7d8f9c5b6-xyz12')
+     * @param containerName Optional: The name of the container within the pod (if pod has multiple containers)
+     * @param previous Optional: Set to true to get logs from the previous terminated container instance
+     * @param tailLines Optional: Number of lines to tail from the end of the logs (default: 100)
+     */
     @Tool("Get logs from a Kubernetes pod")
-    public Map<String, Object> getLogs(
-            @P("The Kubernetes namespace where the pod is located (e.g., 'default', 'kube-system')") String namespace,
-            @P("The exact name of the pod to get logs from (e.g., 'my-app-7d8f9c5b6-xyz12')") String podName,
-            @P("Optional: The name of the container within the pod (if pod has multiple containers)") String containerName,
-            @P("Optional: Set to true to get logs from the previous terminated container instance") Boolean previous,
-            @P("Optional: Number of lines to tail from the end of the logs (default: 100)") Integer tailLines
-    ) {
+    public Map<String, Object> getLogs(String namespace, String podName, String containerName, Boolean previous, Integer tailLines) {
         Log.info("=== Executing Tool: getLogs ===");
         
         if (namespace == null || namespace.isEmpty() || podName == null || podName.isEmpty()) {
@@ -226,13 +225,46 @@ public class K8sTools {
         
         
         try {
+            // First, check if the pod exists
+            Pod pod = k8sClient.pods()
+                .inNamespace(namespace)
+                .withName(podName)
+                .get();
+            
+            if (pod == null) {
+                String errorMsg = MessageFormat.format("Pod not found: {0}/{1}", namespace, podName);
+                Log.warn(errorMsg);
+                return Map.of("error", errorMsg);
+            }
+            
+            // If no container name specified, check if pod has multiple containers
+            String targetContainer = containerName;
+            if (targetContainer == null || targetContainer.isEmpty()) {
+                List<Container> containers = pod.getSpec().getContainers();
+                if (containers != null && containers.size() > 1) {
+                    // Multi-container pod - default to the first non-sidecar container
+                    // Typically istio-proxy, envoy, etc. are sidecars
+                    targetContainer = containers.stream()
+                        .filter(c -> !c.getName().contains("proxy") &&
+                                   !c.getName().contains("envoy") &&
+                                   !c.getName().contains("sidecar"))
+                        .findFirst()
+                        .map(Container::getName)
+                        .orElse(containers.get(0).getName());
+                    
+                    Log.info(MessageFormat.format("Multi-container pod detected. Using container: {0}", targetContainer));
+                } else if (containers != null && !containers.isEmpty()) {
+                    targetContainer = containers.get(0).getName();
+                }
+            }
+            
             var podResource = k8sClient.pods()
                 .inNamespace(namespace)
                 .withName(podName);
             
             String logs;
-            if (containerName != null && !containerName.isEmpty()) {
-                logs = podResource.inContainer(containerName).tailingLines(lines).getLog(getPrevious);
+            if (targetContainer != null && !targetContainer.isEmpty()) {
+                logs = podResource.inContainer(targetContainer).tailingLines(lines).getLog(getPrevious);
             } else {
                 logs = podResource.tailingLines(lines).getLog(getPrevious);
             }
@@ -245,7 +277,7 @@ public class K8sTools {
             return Map.of(
                 "namespace", namespace,
                 "podName", podName,
-                "container", containerName != null ? containerName : "default",
+                "container", targetContainer != null ? targetContainer : "default",
                 "previous", getPrevious,
                 "logs", logs
             );
@@ -259,11 +291,13 @@ public class K8sTools {
     /**
      * Get pod metrics
      */
+    /**
+     * Get resource metrics (CPU and memory usage) for a Kubernetes pod. IMPORTANT: You must provide both the namespace and the exact pod name.
+     * @param namespace The Kubernetes namespace where the pod is located (e.g., 'default', 'kube-system'). REQUIRED.
+     * @param podName The exact name of the pod to get metrics for (e.g., 'my-app-7d8f9c5b6-xyz12'). REQUIRED. Do NOT leave this empty.
+     */
     @Tool("Get resource metrics (CPU and memory usage) for a Kubernetes pod. IMPORTANT: You must provide both the namespace and the exact pod name.")
-    public Map<String, Object> getMetrics(
-            @P("The Kubernetes namespace where the pod is located (e.g., 'default', 'kube-system'). REQUIRED.") String namespace,
-            @P("The exact name of the pod to get metrics for (e.g., 'my-app-7d8f9c5b6-xyz12'). REQUIRED. Do NOT leave this empty.") String podName
-    ) {
+    public Map<String, Object> getMetrics(String namespace, String podName) {
         Log.info("=== Executing Tool: getMetrics ===");
         
         if (namespace == null || namespace.isEmpty() || podName == null || podName.isEmpty()) {
@@ -362,15 +396,14 @@ public class K8sTools {
     }
     
     /**
-     * Inspect Kubernetes resources
+     * Inspect Kubernetes resources in a namespace. Use labelSelector to filter pods by labels (e.g., 'role=stable' or 'role=canary')
+     * @param namespace The Kubernetes namespace to inspect (e.g., 'default', 'kube-system')
+     * @param resourceType Optional: Type of resource to inspect ('deployment', 'pods', 'service', 'configmap'). Leave null to inspect all types.
+     * @param resourceName Optional: Specific resource name to filter by
+     * @param labelSelector Optional: Label selector to filter pods (e.g., 'role=stable', 'app=myapp')
      */
     @Tool("Inspect Kubernetes resources in a namespace. Use labelSelector to filter pods by labels (e.g., 'role=stable' or 'role=canary')")
-    public Map<String, Object> inspectResources(
-            @P("The Kubernetes namespace to inspect (e.g., 'default', 'kube-system')") String namespace,
-            @P("Optional: Type of resource to inspect ('deployment', 'pods', 'service', 'configmap'). Leave null to inspect all types.") String resourceType,
-            @P("Optional: Specific resource name to filter by") String resourceName,
-            @P("Optional: Label selector to filter pods (e.g., 'role=stable', 'app=myapp')") String labelSelector
-    ) {
+    public Map<String, Object> inspectResources(String namespace, String resourceType, String resourceName, String labelSelector) {
         Log.info("=== Executing Tool: inspectResources ===");
         
         if (namespace == null || namespace.isEmpty()) {

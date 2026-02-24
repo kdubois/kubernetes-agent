@@ -24,22 +24,59 @@ spec:
               name: http
               protocol: TCP
           env:
+            # Profile selection - allows switching between OpenAI and Gemini
+            - name: QUARKUS_PROFILE
+              valueFrom:
+                secretKeyRef:
+                  name: kubernetes-agent
+                  key: quarkus_profile
+                  optional: true
+            # OpenAI Configuration
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: kubernetes-agent
+                  key: openai_api_key
+                  optional: true
+            - name: OPENAI_BASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: kubernetes-agent
+                  key: openai_base_url
+                  optional: true
+            - name: OPENAI_MODEL
+              valueFrom:
+                secretKeyRef:
+                  name: kubernetes-agent
+                  key: openai_model
+                  optional: true
+            # Gemini Configuration
             - name: GOOGLE_API_KEY
               valueFrom:
                 secretKeyRef:
                   name: kubernetes-agent
                   key: google_api_key
+                  optional: true
+            - name: GEMINI_MODEL
+              valueFrom:
+                secretKeyRef:
+                  name: kubernetes-agent
+                  key: gemini_model
+                  optional: true
+            # GitHub Configuration
             - name: GITHUB_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: kubernetes-agent
                   key: github_token
+            # Google Cloud Configuration
             - name: GOOGLE_CLOUD_PROJECT
               valueFrom:
                 secretKeyRef:
                   name: kubernetes-agent
                   key: google_cloud_project
                   optional: true
+            # Git Configuration
             - name: GIT_USERNAME
               value: "kubernetes-agent"
             - name: GIT_EMAIL
